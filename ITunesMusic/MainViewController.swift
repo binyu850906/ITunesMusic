@@ -22,6 +22,7 @@ class MainViewController: UIViewController,UITableViewDelegate,UITableViewDataSo
     @IBOutlet weak var playSongButtton: UIButton!
     @IBOutlet weak var nextSongButton: UIButton!
     @IBOutlet weak var playingSheet: UIView!
+    @IBOutlet weak var songsTableView: UITableView!
     
     
     override func viewDidLoad() {
@@ -43,7 +44,9 @@ class MainViewController: UIViewController,UITableViewDelegate,UITableViewDataSo
             self.setPlayingSheet(playingSong: playerStatus.nowPlaying!)
         }
         
-        // Do any additional setup after loading the view.
+        NotificationCenter.default.addObserver(self, selector: #selector(playPauseMusic), name: NSNotification.Name("playPauseMusic"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(nextSong), name: NSNotification.Name("nextSong"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(backwardSong), name: NSNotification.Name("backwardSong"), object: nil)
     }
     func initPlayingSheet() {
         playingSheet.isUserInteractionEnabled = true
@@ -58,11 +61,11 @@ class MainViewController: UIViewController,UITableViewDelegate,UITableViewDataSo
         }
     }
     func playMusic(resource: ResultItem) {
+        playerStatus.isPlay = true
         let playItem = AVPlayerItem(url: resource.previewUrl)
         playerStatus.duration = playItem.asset.duration.seconds
         player.replaceCurrentItem(with: playItem)
         player.play()
-        playerStatus.isPlay = true
         
         setPlayButton()
     }
@@ -141,6 +144,7 @@ class MainViewController: UIViewController,UITableViewDelegate,UITableViewDataSo
         setPlayingSheet(playingSong: playingSong)
         playerStatus.nowPlaying = playingSong
         playerStatus.nowPlayIndex = indexPath.row - 1
+        playerStatus.isPlay = true
     }
     
     @IBAction func playPauseMusic(_ sender: Any) {
@@ -175,6 +179,22 @@ class MainViewController: UIViewController,UITableViewDelegate,UITableViewDataSo
         }
     }
     
+   @objc func backwardSong() {
+        if playerStatus.nowPlaying == nil {
+            return
+        }else {
+            playerStatus.nowPlayIndex -= 1
+            if playerStatus.nowPlayIndex < 0{
+                playerStatus.nowPlayIndex = songsItem.count - 1
+            }
+            playerStatus.nowPlaying = songsItem[playerStatus.nowPlayIndex]
+            playMusic(resource: playerStatus.nowPlaying!)
+            setPlayingSheet(playingSong: playerStatus.nowPlaying!)
+            setPlayButton()
+            
+        }
+    }
+    
     @IBAction func playFirstSong(_ sender: Any) {
         let playSong = songsItem[0]
         playMusic(resource: playSong)
@@ -195,14 +215,14 @@ class MainViewController: UIViewController,UITableViewDelegate,UITableViewDataSo
         setPlayingSheet(playingSong: playsong)
         toCurrentMusicPage()
     }
-    /*
+    
     // MARK: - Navigation
 
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
+        if let row = songsTableView.indexPathForSelectedRow?.row, let controller = segue.destination as? MusicViewController {
+            controller.songItem = songsItem[row - 1]
+        }
+            }
 
 }
